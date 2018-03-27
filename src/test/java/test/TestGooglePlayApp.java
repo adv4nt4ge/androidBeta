@@ -1,5 +1,8 @@
-package apptest;
+package test;
 
+import cucumber.api.java.en.Given;
+import cucumber.api.java.en.Then;
+import cucumber.api.java.en.When;
 import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.MobileBy;
 import io.appium.java_client.MobileElement;
@@ -7,8 +10,7 @@ import io.appium.java_client.TouchAction;
 import io.appium.java_client.android.AndroidDriver;
 import io.appium.java_client.remote.AndroidMobileCapabilityType;
 import io.appium.java_client.remote.MobileCapabilityType;
-import org.junit.Before;
-import org.junit.Test;
+import org.apache.commons.io.IOUtils;
 import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.support.ui.ExpectedConditions;
@@ -16,28 +18,27 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 
-
-public class AppTest {
+public class TestGooglePlayApp {
 
     private static long INSTALL_DURATION_IN_SECONDS = 120L;
+    final String appPackage = "com.murka.scatterslots";
+    final String appActivity = "com.murka.android.core.MurkaUnityActivity";
     private AppiumDriver driver;
     private WebDriverWait wait;
     private long explicitWaitTimeoutInSeconds = 15L;
-    private String versionPlatform = "8.0";
-    private String nameDevice = "Nexus";
-    final String appPackage = "com.murka.scatterslots";
-    final String appActivity = "com.murka.android.core.MurkaUnityActivity";
 
-    @Before
+    @Given("^open Play Market$")
     public void setup() throws IOException, InterruptedException {
         DesiredCapabilities desiredCapabilities = new DesiredCapabilities();
         desiredCapabilities.setCapability(MobileCapabilityType.PLATFORM_NAME, "Android");
-        desiredCapabilities.setCapability(MobileCapabilityType.PLATFORM_VERSION, versionPlatform);
+        desiredCapabilities.setCapability(MobileCapabilityType.PLATFORM_VERSION, appVersion());
         desiredCapabilities.setCapability(MobileCapabilityType.NO_RESET, true);
-        desiredCapabilities.setCapability(MobileCapabilityType.DEVICE_NAME, nameDevice);
+        desiredCapabilities.setCapability(MobileCapabilityType.DEVICE_NAME, nameDevice());
         desiredCapabilities.setCapability(AndroidMobileCapabilityType.APP_PACKAGE, "com.android.vending");
         desiredCapabilities.setCapability(AndroidMobileCapabilityType.APP_ACTIVITY, "com.google.android.finsky.activities.MainActivity");
         desiredCapabilities.setCapability("deviceOrientation", "portrait");
@@ -49,13 +50,9 @@ public class AppTest {
         uninstallApp(appPackage);
     }
 
-    @Test
-    public void testGooglePlayApp() throws Exception {
 
-        String testAppName = "Scatter Slots Murka";
-        String checkName = "Игровые Автоматы Scatter Slots";
-        String versionApp = "3.19.0";
-
+    @When("^input app name \"(.*)\"$")
+    public void testGooglePlayApp(String testAppName) throws Exception {
         // ждем пока загрузится строка поиска в плей маркете
         wait.until(ExpectedConditions.visibilityOf(
                 driver.findElement(MobileBy.AndroidUIAutomator("new UiSelector().resourceId(\"com.android.vending:id/search_box_idle_text\")"))))
@@ -70,12 +67,18 @@ public class AppTest {
                 driver.findElement(MobileBy.AndroidUIAutomator("new UiSelector()." +
                         "resourceId(\"com.android.vending:id/suggest_text\").text(\"" + testAppName.toLowerCase() + "\")"))))
                 .click();
+    }
 
+    @When("^select app \"(.*)\"$")
+    public void tapApp(String checkName) {
         // тап по нашему приложению в поиске
         wait.until(ExpectedConditions.visibilityOf(
                 driver.findElement(MobileBy.AndroidUIAutomator("new UiSelector()." +
                         "resourceId(\"com.android.vending:id/li_title\").text(\"" + checkName + "\")")))).click();
+    }
 
+    @Then("^check app version \"(.*)\"$")
+    public void checkVersion(String versionApp) {
         // проверка версии приложения
         driver.findElement(MobileBy.AndroidUIAutomator("new UiSelector().className(\"android.widget.TextView\")." +
                 "resourceId(\"com.android.vending:id/footer_message\").text(\"ЧИТАТЬ ДАЛЬШЕ\")"))
@@ -99,7 +102,10 @@ public class AppTest {
         wait.until(ExpectedConditions.visibilityOf(driver.findElement(MobileBy.AndroidUIAutomator("new UiSelector()." +
                 "className(\"android.widget.ImageButton\")"))))
                 .click();
+    }
 
+    @When("^install app$")
+    public void installApp() {
         // нажимаем кнопку установить
         wait.until(ExpectedConditions.visibilityOf(driver.findElement(MobileBy.AndroidUIAutomator("new UiSelector()." +
                 "className(\"android.widget.Button\").text(\"УСТАНОВИТЬ\")"))))
@@ -120,7 +126,10 @@ public class AppTest {
 
         // выход из плеймаркета
         driver.quit();
+    }
 
+    @Then("^start app$")
+    public void startApp() throws Exception {
         // запуск приложения
         driver = new AndroidDriver(new URL("http://0.0.0.0:4723/wd/hub"), installedAppCaps());
         driver.launchApp();
@@ -135,7 +144,10 @@ public class AppTest {
        /*wait.until(ExpectedConditions.visibilityOf(driver.findElement(MobileBy.
                 AndroidUIAutomator("new UiSelector().resourceId(\"android:id/content\")"))));
 */
+    }
 
+    @When("^select position in buy menu$")
+    public void buyPosition() throws InterruptedException {
         Thread.sleep(20000);
         TouchAction touchAction = new TouchAction(driver);
         Thread.sleep(3000);
@@ -145,7 +157,7 @@ public class AppTest {
 
         //тап по кнопки buy
         Thread.sleep(3000);
-        touchAction.tap(781,50).perform();
+        touchAction.tap(781, 50).perform();
         Thread.sleep(5000);
         //тап по кнопки
         touchAction.tap(1627, 817).perform();
@@ -168,18 +180,31 @@ public class AppTest {
 
     }
 
-    private DesiredCapabilities installedAppCaps() throws Exception {
+    public DesiredCapabilities installedAppCaps() throws Exception {
 
         DesiredCapabilities desiredCapabilities = new DesiredCapabilities();
         desiredCapabilities.setCapability(MobileCapabilityType.PLATFORM_NAME, "Android");
-        desiredCapabilities.setCapability(MobileCapabilityType.PLATFORM_VERSION, versionPlatform);
+        desiredCapabilities.setCapability(MobileCapabilityType.PLATFORM_VERSION, appVersion());
         desiredCapabilities.setCapability(MobileCapabilityType.NO_RESET, true);
-        desiredCapabilities.setCapability(MobileCapabilityType.DEVICE_NAME, nameDevice);
+        desiredCapabilities.setCapability(MobileCapabilityType.DEVICE_NAME, nameDevice());
         desiredCapabilities.setCapability(AndroidMobileCapabilityType.APP_PACKAGE, appPackage);
         desiredCapabilities.setCapability(AndroidMobileCapabilityType.APP_ACTIVITY, appActivity);
         desiredCapabilities.setCapability("autoLaunch", "false");
         desiredCapabilities.setCapability("deviceOrientation", "portrait");
         return desiredCapabilities;
+    }
+
+
+    private String appVersion() throws IOException, InterruptedException {
+        String cmd = "adb shell getprop ro.build.version.release";
+        InputStream is = Runtime.getRuntime().exec(cmd).getInputStream();
+        return IOUtils.toString(is, StandardCharsets.UTF_8);
+    }
+
+    private String nameDevice() throws IOException, InterruptedException {
+        String cmd = "adb shell getprop ro.product.model";
+        InputStream is = Runtime.getRuntime().exec(cmd).getInputStream();
+        return IOUtils.toString(is, StandardCharsets.UTF_8);
     }
 
     private void uninstallApp(String appPackage) throws IOException, InterruptedException {
@@ -201,7 +226,6 @@ public class AppTest {
 
         p.waitFor();
     }
-
     /*@After
     public void tearDown() {
         if (driver != null) {

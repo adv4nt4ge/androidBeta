@@ -17,5 +17,10 @@ dependencies {
     compile group: 'io.appium', name: 'java-client', version: '5.0.4'
     // https://mvnrepository.com/artifact/com.google.android/android-test
     compile group: 'com.google.android', name: 'android-test', version: '4.1.1.4'
+    compile group: 'info.cukes', name: 'cucumber-testng', version: '1.1.5'
+    compile 'info.cukes:cucumber-java:1.2.5'
+    compile 'org.seleniumhq.selenium:selenium-api:3.0.1'
+    compile 'org.seleniumhq.selenium:selenium-support:3.0.1'
+    compile group: 'net.masterthought', name: 'cucumber-reporting', version: '3.6.0'
 
 }
